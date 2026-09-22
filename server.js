@@ -76,16 +76,21 @@ io.on('connection', (socket) => {
         name: name || `사원_${clientIp.split('.').pop()}`,
         cash: 1000000,
         stocks: {},
+        avgPrices: {},
         isAdmin: isAdmin,
         online: true,
         socketId: socket.id
       };
-      Object.keys(STOCKS).forEach(id => userDbByIp[clientIp].stocks[id] = 0);
+      Object.keys(STOCKS).forEach(id => {
+        userDbByIp[clientIp].stocks[id] = 0;
+        userDbByIp[clientIp].avgPrices[id] = 0;
+      });
     } else {
       if (name) userDbByIp[clientIp].name = name;
       if (isAdmin) userDbByIp[clientIp].isAdmin = true;
       userDbByIp[clientIp].online = true;
       userDbByIp[clientIp].socketId = socket.id;
+      if (!userDbByIp[clientIp].avgPrices) userDbByIp[clientIp].avgPrices = {};
     }
 
     const userData = userDbByIp[clientIp];
@@ -110,7 +115,14 @@ io.on('connection', (socket) => {
     const totalCost = stock.price * count;
     if (user.cash >= totalCost) {
       user.cash -= totalCost;
-      user.stocks[deptId] = (user.stocks[deptId] || 0) + count;
+      
+      const prevQty = user.stocks[deptId] || 0;
+      const prevAvg = user.avgPrices[deptId] || stock.price;
+      const newQty = prevQty + count;
+      const newAvg = ((prevQty * prevAvg) + totalCost) / newQty;
+
+      user.stocks[deptId] = newQty;
+      user.avgPrices[deptId] = newAvg;
       tradeVolume[deptId] += count;
 
       socket.emit('updateUserData', user);
@@ -129,6 +141,10 @@ io.on('connection', (socket) => {
       user.cash += stock.price * count;
       user.stocks[deptId] -= count;
       tradeVolume[deptId] -= count;
+
+      if (user.stocks[deptId] === 0) {
+        user.avgPrices[deptId] = 0;
+      }
 
       socket.emit('updateUserData', user);
       broadcastUserState();
