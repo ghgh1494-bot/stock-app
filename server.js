@@ -110,20 +110,21 @@ io.on('connection', (socket) => {
   socket.on('buy', ({ deptId, count }) => {
     const user = userDbByIp[clientIp];
     const stock = STOCKS[deptId];
-    if (!user || !stock) return;
+    const buyCount = parseInt(count) || 1;
+    if (!user || !stock || buyCount <= 0) return;
 
-    const totalCost = stock.price * count;
+    const totalCost = stock.price * buyCount;
     if (user.cash >= totalCost) {
       user.cash -= totalCost;
       
       const prevQty = user.stocks[deptId] || 0;
       const prevAvg = user.avgPrices[deptId] || stock.price;
-      const newQty = prevQty + count;
+      const newQty = prevQty + buyCount;
       const newAvg = ((prevQty * prevAvg) + totalCost) / newQty;
 
       user.stocks[deptId] = newQty;
       user.avgPrices[deptId] = newAvg;
-      tradeVolume[deptId] += count;
+      tradeVolume[deptId] += buyCount;
 
       socket.emit('updateUserData', user);
       broadcastUserState();
@@ -135,12 +136,13 @@ io.on('connection', (socket) => {
   socket.on('sell', ({ deptId, count }) => {
     const user = userDbByIp[clientIp];
     const stock = STOCKS[deptId];
-    if (!user || !stock) return;
+    const sellCount = parseInt(count) || 1;
+    if (!user || !stock || sellCount <= 0) return;
 
-    if ((user.stocks[deptId] || 0) >= count) {
-      user.cash += stock.price * count;
-      user.stocks[deptId] -= count;
-      tradeVolume[deptId] -= count;
+    if ((user.stocks[deptId] || 0) >= sellCount) {
+      user.cash += stock.price * sellCount;
+      user.stocks[deptId] -= sellCount;
+      tradeVolume[deptId] -= sellCount;
 
       if (user.stocks[deptId] === 0) {
         user.avgPrices[deptId] = 0;
@@ -153,6 +155,27 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 관리자 기능: 닉네임/계정 초기화 (차단 없이 다시 재설정 가능)
+  socket.on('adminResetUser', ({ targetIp }) => {
+    if (!userDbByIp[clientIp]?.isAdmin) return;
+    if (userDbByIp[targetIp]) {
+      const resetName = userDbByIp[targetIp].name;
+      const targetSocketId = userDbByIp[targetIp].socketId;
+
+      // 데이터에서 삭제하여 다음 접속 시 닉네임을 새로 설정하도록 유도
+      delete userDbByIp[targetIp];
+
+      // 해당 사용자가 현재 접속 중인 경우 알림을 보내고 새로고침 유도
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('forceReload', '관리자에 의해 닉네임 정보가 리셋되었습니다. 닉네임을 다시 설정해주세요.');
+      }
+
+      broadcastUserState();
+      socket.emit('alert', `'${resetName}' 사원의 계정 및 닉네임이 리셋되었습니다.`);
+    }
+  });
+
+  // 관리자 기능: 예수금 강제 수정
   socket.on('adminModifyUser', ({ targetIp, cash }) => {
     if (!userDbByIp[clientIp]?.isAdmin) return;
     if (userDbByIp[targetIp]) {
@@ -209,9 +232,9 @@ setInterval(() => {
   io.emit('stockUpdate', STOCKS);
 }, 1 * 60 * 1000); // 1분
 
-// 뉴스 속보 이벤트 (10분 주기)
+// 뉴스 속보 이벤트 (5분 주기 - 85% 확률)
 setInterval(() => {
-  if (Math.random() < 0.7) { // 70% 확률로 뉴스 발생
+  if (Math.random() < 0.85) { 
     const newsItem = HUMOR_NEWS[Math.floor(Math.random() * HUMOR_NEWS.length)];
     const stock = STOCKS[newsItem.deptId];
 
@@ -232,9 +255,9 @@ setInterval(() => {
 
     io.emit('newsUpdate', { news: latestNews, stocks: STOCKS, newsHistory });
   }
-}, 10 * 60 * 1000); // 10분
+}, 5 * 60 * 1000); // 5분 주기
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`================================================`);
   console.log(`[IP 저장형 사내 주식 시스템 구동 성공]`);
