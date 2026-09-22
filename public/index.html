@@ -151,15 +151,27 @@
     .badge-good { background: rgba(242, 54, 69, 0.15); color: var(--up-color); border: 1px solid var(--up-color); }
     .badge-bad { background: rgba(8, 153, 129, 0.15); color: var(--down-color); border: 1px solid var(--down-color); }
 
-    .sidebar { flex: 1; min-width: 280px; max-width: 340px; padding: 16px; background: var(--card-bg); overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    /* 사이드바 2단 분할 (위/아래 반반) */
+    .sidebar { flex: 1; min-width: 320px; max-width: 380px; background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; }
 
-    .user-card { background: #0e1118; border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; }
-    .user-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .sidebar-top { flex: 1; padding: 16px; overflow-y: auto; border-bottom: 2px solid var(--card-border); }
+    .sidebar-bottom { flex: 1; padding: 16px; overflow-y: auto; background-color: #12151e; display: flex; flex-direction: column; }
+
+    .sidebar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+    .user-card { background: #0e1118; border: 1px solid var(--card-border); padding: 8px 10px; border-radius: 4px; margin-bottom: 6px; }
+    .user-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     .status-online { background: #22c55e; }
     .status-offline { background: #64748b; }
 
-    .admin-box { background: #1e1014; border: 1px solid #5c1d24; padding: 12px; border-radius: 4px; }
+    /* 보유 주식 및 수익률 테이블 */
+    .portfolio-summary { background: #171b26; border: 1px solid var(--card-border); padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .portfolio-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .portfolio-table th { text-align: left; padding: 6px 4px; color: var(--text-muted); border-bottom: 1px solid var(--card-border); font-weight: normal; }
+    .portfolio-table td { padding: 8px 4px; border-bottom: 1px solid #1f2433; }
+
+    .admin-box { background: #1e1014; border: 1px solid #5c1d24; padding: 10px; border-radius: 4px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -243,24 +255,57 @@
       </div>
     </div>
 
+    <!-- 우측 사이드바 (상단: 참여사원 / 하단: 내 보유주식 및 수익률) -->
     <div class="sidebar">
-      <div>
-        <div style="font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 12px;">실시간 참여 사원 (<span id="user-count">0</span>)</div>
+      
+      <!-- 상단 50%: 실시간 참여 사원 목록 -->
+      <div class="sidebar-top">
+        <div class="sidebar-title">
+          <span>👥 실시간 참여 사원</span>
+          <span style="color:#2962ff; font-weight:bold;"><span id="user-count">0</span>명</span>
+        </div>
         <div id="user-list"></div>
+
+        <div id="admin-panel" class="admin-box" style="display:none;">
+          <div style="color: #f87171; font-size: 11px; font-weight: bold; margin-bottom: 8px;">⚡ 어드민 전용 제어판</div>
+          <div class="input-group">
+            <label>대상 사원 선택</label>
+            <select id="admin-user-select" class="input-field" style="padding: 4px; font-size: 11px;"></select>
+          </div>
+          <div class="input-group">
+            <label>조정할 예수금(원)</label>
+            <input type="number" id="admin-cash-input" class="input-field" placeholder="예: 5000000" style="padding: 4px; font-size: 11px;">
+          </div>
+          <button class="btn-login" style="background:#ef4444; padding:6px; margin-top:2px; font-size:11px;" onclick="adminUpdateCash()">자산 강제 수정</button>
+        </div>
       </div>
 
-      <div id="admin-panel" class="admin-box" style="display:none;">
-        <div style="color: #f87171; font-size: 12px; font-weight: bold; margin-bottom: 10px;">⚡ 어드민 전용 제어판</div>
-        <div class="input-group">
-          <label>대상 사원 선택</label>
-          <select id="admin-user-select" class="input-field" style="padding: 6px;"></select>
+      <!-- 하단 50%: 내 보유 주식 및 실시간 수익률 -->
+      <div class="sidebar-bottom">
+        <div class="sidebar-title">
+          <span>💼 내 보유 주식 및 수익률</span>
         </div>
-        <div class="input-group">
-          <label>조정할 예수금(원)</label>
-          <input type="number" id="admin-cash-input" class="input-field" placeholder="예: 5000000" style="padding: 6px;">
+        <div class="portfolio-summary">
+          <span style="font-size:11px; color:var(--text-muted);">총 평가 손익률</span>
+          <span id="total-return-rate" style="font-family:'Consolas', monospace; font-size:13px;">0.00%</span>
         </div>
-        <button class="btn-login" style="background:#ef4444; padding:8px; margin-top:4px;" onclick="adminUpdateCash()">자산 강제 수정</button>
+        <div style="flex:1; overflow-y:auto;">
+          <table class="portfolio-table">
+            <thead>
+              <tr>
+                <th>종목명</th>
+                <th style="text-align:right;">수량</th>
+                <th style="text-align:right;">평단가</th>
+                <th style="text-align:right;">수익률</th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-list">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">보유 주식이 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -321,6 +366,7 @@
     renderStocks();
     renderNewsBoard();
     updateUserUI();
+    renderPortfolioUI();
   });
 
   socket.on('updateUserData', (user) => {
@@ -328,12 +374,14 @@
     document.getElementById('my-name').innerText = user.name;
     updateUserUI();
     renderStocks();
+    renderPortfolioUI();
   });
 
   socket.on('stockUpdate', (stocks) => {
     currentStocks = stocks;
     renderStocks();
     updateUserUI();
+    renderPortfolioUI();
   });
 
   socket.on('newsUpdate', ({ news, stocks, newsHistory }) => {
@@ -343,6 +391,7 @@
     renderStocks();
     renderNewsBoard();
     updateUserUI();
+    renderPortfolioUI();
   });
 
   socket.on('userListUpdate', (users) => {
@@ -376,7 +425,8 @@
 
     let totalStockVal = 0;
     Object.keys(currentStocks).forEach(id => {
-      totalStockVal += (myData.stocks[id] || 0) * currentStocks[id].price;
+      const count = myData.stocks[id] || 0;
+      totalStockVal += count * currentStocks[id].price;
     });
     document.getElementById('my-total-assets').innerText = (myData.cash + totalStockVal).toLocaleString();
   }
@@ -414,6 +464,75 @@
         </tr>
       `;
     });
+  }
+
+  // 하단 영역: 보유 주식 리스트 및 수익률(+% / -%) 실시간 계산 렌더링
+  function renderPortfolioUI() {
+    if (!myData || !myData.stocks) return;
+
+    const tbody = document.getElementById('portfolio-list');
+    const totalReturnEl = document.getElementById('total-return-rate');
+    tbody.innerHTML = '';
+
+    let totalBuyAmount = 0;
+    let totalEvalAmount = 0;
+    let hasStock = false;
+
+    Object.keys(currentStocks).forEach(id => {
+      const qty = myData.stocks[id] || 0;
+      if (qty <= 0) return;
+
+      hasStock = true;
+      const stock = currentStocks[id];
+      const avgPrice = myData.avgPrices?.[id] || stock.price;
+      const currentPrice = stock.price;
+
+      const buyVal = avgPrice * qty;
+      const evalVal = currentPrice * qty;
+      const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+
+      totalBuyAmount += buyVal;
+      totalEvalAmount += evalVal;
+
+      let rateColor = 'var(--text-main)';
+      let sign = '';
+      if (rate > 0) {
+        rateColor = 'var(--up-color)';
+        sign = '+';
+      } else if (rate < 0) {
+        rateColor = 'var(--down-color)';
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:bold; color:#fff;">${stock.name}</td>
+        <td style="text-align:right;">${qty}주</td>
+        <td style="text-align:right;">${Math.round(avgPrice).toLocaleString()}원</td>
+        <td style="text-align:right; font-weight:bold; font-family:'Consolas', monospace; color:${rateColor};">
+          ${sign}${rate.toFixed(2)}%
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (!hasStock) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">보유 주식이 없습니다.</td></tr>';
+      totalReturnEl.innerText = '0.00%';
+      totalReturnEl.style.color = '#fff';
+    } else {
+      const totalRate = totalBuyAmount > 0 ? ((totalEvalAmount - totalBuyAmount) / totalBuyAmount) * 100 : 0;
+      let totalColor = '#fff';
+      let totalSign = '';
+      if (totalRate > 0) {
+        totalColor = 'var(--up-color)';
+        totalSign = '+';
+      } else if (totalRate < 0) {
+        totalColor = 'var(--down-color)';
+      }
+
+      totalReturnEl.innerText = `${totalSign}${totalRate.toFixed(2)}%`;
+      totalReturnEl.style.color = totalColor;
+    }
   }
 
   function renderNewsBoard() {
