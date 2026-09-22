@@ -1,595 +1,393 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>사내 모의 주식 거래 시스템 (MTS)</title>
-  <style>
-    :root {
-      --bg-color: #0e1118;
-      --card-bg: #171b26;
-      --card-border: #232736;
-      --text-main: #d1d4dc;
-      --text-muted: #787b86;
-      --up-color: #f23645;
-      --down-color: #089981;
-      --accent-color: #2962ff;
-      --accent-hover: #1e53e5;
-    }
+    <meta charset="UTF-8">
+    <title>사내 포켓몬 대격돌 RPG</title>
+    <link href="https://fonts.googleapis.com/css2?family=DungGeunMo&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'DungGeunMo', monospace;
+            user-select: none;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-main); font-size: 13px; min-height: 100vh; display: flex; flex-direction: column; }
+        body {
+            margin: 0;
+            background-color: #2b2b2b;
+            color: #111;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    #login-screen {
-      max-width: 400px;
-      margin: 80px auto;
-      padding: 30px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-    #login-screen h2 { color: #fff; margin-bottom: 8px; font-size: 20px; }
-    #welcome-msg { color: var(--text-muted); font-size: 12px; margin-bottom: 24px; line-height: 1.4; }
-    .input-group { margin-bottom: 12px; text-align: left; }
-    .input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-    .input-field {
-      width: 100%;
-      padding: 10px 12px;
-      background: #0e1118;
-      border: 1px solid var(--card-border);
-      border-radius: 4px;
-      color: #fff;
-      font-size: 13px;
-      outline: none;
-    }
-    .input-field:focus { border-color: var(--accent-color); }
-    .btn-login {
-      width: 100%;
-      padding: 12px;
-      background: var(--accent-color);
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    .btn-login:hover { background: var(--accent-hover); }
+        /* 메인 게임 화면 (도감 스타일) */
+        #game-container {
+            flex: 1;
+            background: #dc0a2d;
+            border: 8px solid #8b0000;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            position: relative;
+        }
 
-    #app { display: none; flex-direction: column; height: 100vh; }
+        /* 포켓몬 도감 상단 램프 연출 */
+        .pokedex-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
 
-    header {
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--card-border);
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .brand { font-size: 15px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .brand-badge { background: var(--accent-color); font-size: 10px; padding: 2px 6px; border-radius: 3px; }
-    
-    .user-info-bar { display: flex; align-items: center; gap: 20px; }
-    .asset-item { text-align: right; }
-    .asset-label { font-size: 10px; color: var(--text-muted); display: block; }
-    .asset-value { font-weight: bold; color: #fff; font-size: 14px; }
-    .btn-sm {
-      background: #2a2e3d;
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-      padding: 4px 8px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-size: 11px;
-    }
+        .blue-lamp {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #80d0ff, #0066cc);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #0066cc;
+        }
 
-    .ticker-bar {
-      background: #0a0c10;
-      border-bottom: 1px solid var(--card-border);
-      padding: 8px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-    }
-    .ticker-tag { background: #f39c12; color: #000; font-weight: bold; font-size: 10px; padding: 1px 5px; border-radius: 2px; }
-    .ticker-content { color: #e1e3e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .small-lamp {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid #000;
+        }
+        .red { background: #ff0000; }
+        .yellow { background: #ffcc00; }
+        .green { background: #00cc00; }
 
-    .dashboard { display: flex; flex: 1; overflow: hidden; }
-    .main-content { flex: 3; padding: 16px; overflow-y: auto; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 15px; }
+        /* 게임 메인 스크린 */
+        #screen {
+            flex: 1;
+            background: #8bac0f; /* 게임보이 클래식 액정 색상 */
+            border: 6px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
 
-    /* 탭 메뉴 디자인 */
-    .nav-tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: bold;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .tab-btn.active { background: #2a2e3d; color: #fff; }
+        /* 파트너 포켓몬 스테이터스 카트리지 */
+        .pokemon-card {
+            background: #9bbc0f;
+            border: 4px solid #0f380f;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+        .sprite {
+            width: 96px;
+            height: 96px;
+            image-rendering: pixelated;
+        }
 
-    .stock-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .stock-table th { padding: 10px 12px; color: var(--text-muted); font-size: 11px; border-bottom: 1px solid var(--card-border); font-weight: normal; }
-    .stock-table td { padding: 12px; border-bottom: 1px solid var(--card-border); }
-    .stock-table tr:hover { background: #1c202e; }
+        .shiny-glow {
+            filter: drop-shadow(0 0 8px #a855f7);
+            animation: pulse 1.5s infinite alternate;
+        }
 
-    .dept-name { font-weight: bold; color: #fff; font-size: 14px; }
-    .dept-category { font-size: 11px; color: var(--text-muted); }
+        @keyframes pulse {
+            from { filter: drop-shadow(0 0 4px #a855f7); }
+            to { filter: drop-shadow(0 0 12px #eab308); }
+        }
 
-    .price-tag { font-family: 'Consolas', monospace; font-weight: bold; font-size: 14px; }
-    .price-up { color: var(--up-color); }
-    .price-down { color: var(--down-color); }
+        .shiny-text {
+            color: #7e22ce;
+            text-shadow: 1px 1px 0px #fde047;
+            font-weight: bold;
+        }
 
-    .action-btns { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-    .qty-input { width: 50px; padding: 4px; border-radius: 3px; border: 1px solid var(--card-border); background: #0e1118; color: #fff; text-align: center; font-size: 12px; }
-    .btn-trade { padding: 6px 10px; border: none; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer; }
-    .btn-buy { background: var(--up-color); color: #fff; }
-    .btn-sell { background: var(--down-color); color: #fff; }
+        /* 레트로 체력바 */
+        .hp-bar-container {
+            width: 100%;
+            height: 14px;
+            background: #0f380f;
+            border: 2px solid #0f380f;
+            border-radius: 4px;
+            overflow: hidden;
+        }
 
-    /* 뉴스 게시판 리스트 스타일 */
-    .news-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 12px 16px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .news-time { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-    .news-msg { font-size: 13px; color: #fff; font-weight: 500; }
-    .news-badge { font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: 'Consolas', monospace; }
-    .badge-good { background: rgba(242, 54, 69, 0.15); color: var(--up-color); border: 1px solid var(--up-color); }
-    .badge-bad { background: rgba(8, 153, 129, 0.15); color: var(--down-color); border: 1px solid var(--down-color); }
+        .hp-bar {
+            height: 100%;
+            background: #306230;
+            width: 100%;
+            transition: width 0.3s;
+        }
 
-    /* 사이드바 2단 분할 (위/아래 반반) */
-    .sidebar { flex: 1; min-width: 320px; max-width: 380px; background: var(--card-bg); display: flex; flex-direction: column; overflow: hidden; }
+        /* 버튼 및 메뉴 그룹 */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
 
-    .sidebar-top { flex: 1; padding: 16px; overflow-y: auto; border-bottom: 2px solid var(--card-border); }
-    .sidebar-bottom { flex: 1; padding: 16px; overflow-y: auto; background-color: #12151e; display: flex; flex-direction: column; }
+        .btn {
+            background: #f8f8f8;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 0 #333;
+            transition: transform 0.1s;
+        }
 
-    .sidebar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
 
-    .user-card { background: #0e1118; border: 1px solid var(--card-border); padding: 8px 10px; border-radius: 4px; margin-bottom: 6px; }
-    .user-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-    .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
-    .status-online { background: #22c55e; }
-    .status-offline { background: #64748b; }
+        .btn-center { background: #f87171; color: white; }
+        .btn-train { background: #fbbf24; }
+        .btn-field { background: #4ade80; }
 
-    /* 보유 주식 및 수익률 테이블 */
-    .portfolio-summary { background: #171b26; border: 1px solid var(--card-border); padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-    .portfolio-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .portfolio-table th { text-align: left; padding: 6px 4px; color: var(--text-muted); border-bottom: 1px solid var(--card-border); font-weight: normal; }
-    .portfolio-table td { padding: 8px 4px; border-bottom: 1px solid #1f2433; }
+        /* 모달 스타일 */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 20px;
+            z-index: 10;
+        }
 
-    .admin-box { background: #1e1014; border: 1px solid #5c1d24; padding: 10px; border-radius: 4px; margin-top: 10px; }
-  </style>
+        .modal-box {
+            background: #fff;
+            color: #000;
+            border: 6px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+            text-align: center;
+        }
+
+        /* 우측 실시간 랭킹 사이드바 */
+        #sidebar {
+            width: 280px;
+            background: #1f2937;
+            color: white;
+            border-left: 4px solid #111;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-item {
+            background: #374151;
+            border: 2px solid #4b5563;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="brand" style="justify-content: center; margin-bottom: 16px;">
-    <span>사내 ERP 자산관리</span>
-    <span class="brand-badge">MTS v2.5</span>
-  </div>
-  <h2>계정 접속</h2>
-  <p id="welcome-msg">네트워크 정보를 확인하는 중입니다...</p>
-
-  <div class="input-group">
-    <label for="username">사원 닉네임</label>
-    <input type="text" id="username" class="input-field" placeholder="예: 홍길동">
-  </div>
-  <div class="input-group">
-    <label for="admin-pass">관리자 인증키 (선택)</label>
-    <input type="password" id="admin-pass" class="input-field" placeholder="비밀번호 입력">
-  </div>
-  <button class="btn-login" onclick="login()">터미널 접속하기</button>
-</div>
-
-<div id="app">
-  <header>
-    <div class="brand">
-      <span>사내 주식 모의거래 시스템</span>
-      <span class="brand-badge">LIVE</span>
-    </div>
-
-    <div class="user-info-bar">
-      <div class="asset-item">
-        <span class="asset-label">접속 계정</span>
-        <span id="my-name" style="color:#fff; font-weight:bold;">-</span>
-        <button class="btn-sm" onclick="promptChangeName()" style="margin-left:4px;">변경</button>
-      </div>
-      <div class="asset-item">
-        <span class="asset-label">보유 예수금</span>
-        <span id="my-cash" class="asset-value" style="color:#f39c12;">0</span> <span style="font-size:10px; color:#888;">원</span>
-      </div>
-      <div class="asset-item">
-        <span class="asset-label">총 평가 자산</span>
-        <span id="my-total-assets" class="asset-value">0</span> <span style="font-size:10px; color:#888;">원</span>
-      </div>
-    </div>
-  </header>
-
-  <div class="ticker-bar">
-    <span class="ticker-tag">LATEST NEWS</span>
-    <div class="ticker-content" id="ticker-news">시스템이 정상 구동되었습니다.</div>
-  </div>
-
-  <div class="dashboard">
-    <div class="main-content">
-      <!-- 탭 카테고리 -->
-      <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('stocks-tab', this)">📈 종목 시세</button>
-        <button class="tab-btn" onclick="switchTab('news-tab', this)">📰 사내 속보 게시판</button>
-      </div>
-
-      <!-- 1. 종목 시세 탭 -->
-      <div id="stocks-tab" class="tab-content active">
-        <table class="stock-table">
-          <thead>
-            <tr>
-              <th>종목명 / 종목구분</th>
-              <th style="text-align: right;">현재가</th>
-              <th style="text-align: center;">내 보유 수량</th>
-              <th style="text-align: right;">주문 실행</th>
-            </tr>
-          </thead>
-          <tbody id="stock-list"></tbody>
-        </table>
-      </div>
-
-      <!-- 2. 뉴스 게시판 탭 -->
-      <div id="news-tab" class="tab-content">
-        <div id="news-board-list">
-          <div style="color:var(--text-muted); text-align:center; padding:30px;">발행된 속보가 없습니다.</div>
+    <!-- 메인 게임 가젯 -->
+    <div id="game-container">
+        <div class="pokedex-header">
+            <div class="blue-lamp"></div>
+            <div class="small-lamp red"></div>
+            <div class="small-lamp yellow"></div>
+            <div class="small-lamp green"></div>
         </div>
-      </div>
-    </div>
 
-    <!-- 우측 사이드바 -->
-    <div class="sidebar">
-      
-      <!-- 상단 50%: 실시간 참여 사원 목록 -->
-      <div class="sidebar-top">
-        <div class="sidebar-title">
-          <span>👥 실시간 참여 사원</span>
-          <span style="color:#2962ff; font-weight:bold;"><span id="user-count">0</span>명</span>
-        </div>
-        <div id="user-list"></div>
-
-        <div id="admin-panel" class="admin-box" style="display:none;">
-          <div style="color: #f87171; font-size: 11px; font-weight: bold; margin-bottom: 8px;">⚡ 어드민 전용 제어판</div>
-          <div class="input-group">
-            <label>대상 사원 선택</label>
-            <select id="admin-user-select" class="input-field" style="padding: 4px; font-size: 11px;"></select>
-          </div>
-          <div class="input-group">
-            <label>조정할 예수금(원)</label>
-            <input type="number" id="admin-cash-input" class="input-field" placeholder="예: 5000000" style="padding: 4px; font-size: 11px;">
-          </div>
-          <div style="display:flex; gap:4px; margin-top:4px;">
-            <button class="btn-login" style="background:#ef4444; padding:6px; font-size:11px; flex:1;" onclick="adminUpdateCash()">자산 수정</button>
-            <button class="btn-login" style="background:#d97706; padding:6px; font-size:11px; flex:1;" onclick="adminResetUser()">닉네임 리셋</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 하단 50%: 내 보유 주식 및 실시간 수익률 -->
-      <div class="sidebar-bottom">
-        <div class="sidebar-title">
-          <span>💼 내 보유 주식 및 수익률</span>
-        </div>
-        <div class="portfolio-summary">
-          <span style="font-size:11px; color:var(--text-muted);">총 평가 손익률</span>
-          <span id="total-return-rate" style="font-family:'Consolas', monospace; font-size:13px;">0.00%</span>
-        </div>
-        <div style="flex:1; overflow-y:auto;">
-          <table class="portfolio-table">
-            <thead>
-              <tr>
-                <th>종목명</th>
-                <th style="text-align:right;">수량</th>
-                <th style="text-align:right;">평단가</th>
-                <th style="text-align:right;">수익률</th>
-              </tr>
-            </thead>
-            <tbody id="portfolio-list">
-              <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">보유 주식이 없습니다.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-  let myData = null;
-  let currentStocks = {};
-  let globalNewsHistory = [];
-
-  socket.on('checkExistingUser', ({ existingUser }) => {
-    const welcomeMsg = document.getElementById('welcome-msg');
-    if (existingUser) {
-      welcomeMsg.innerText = `기존 접속 기록이 확인되었습니다. [닉네임: ${existingUser.name}]`;
-      document.getElementById('username').value = existingUser.name;
-    } else {
-      welcomeMsg.innerText = `신규 단말기입니다. 사용할 닉네임을 설정해 주세요.`;
-    }
-  });
-
-  function login() {
-    const name = document.getElementById('username').value.trim();
-    const adminPassword = document.getElementById('admin-pass').value.trim();
-    if (!name) return alert('닉네임을 입력해주세요.');
-
-    socket.emit('login', { name, adminPassword });
-  }
-
-  function promptChangeName() {
-    const newName = prompt('변경할 닉네임을 입력하세요:', myData?.name || '');
-    if (newName && newName.trim()) {
-      socket.emit('changeNickname', newName.trim());
-    }
-  }
-
-  function switchTab(tabId, btnEl) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-
-    document.getElementById(tabId).classList.add('active');
-    btnEl.classList.add('active');
-  }
-
-  socket.on('loginSuccess', ({ user, stocks, news, newsHistory }) => {
-    myData = user;
-    currentStocks = stocks;
-    globalNewsHistory = newsHistory || [];
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    document.getElementById('my-name').innerText = user.name;
-    document.getElementById('ticker-news').innerText = news;
-
-    if (user.isAdmin) {
-      document.getElementById('admin-panel').style.display = 'block';
-    }
-
-    renderStocks();
-    renderNewsBoard();
-    updateUserUI();
-    renderPortfolioUI();
-  });
-
-  socket.on('updateUserData', (user) => {
-    myData = user;
-    document.getElementById('my-name').innerText = user.name;
-    updateUserUI();
-    renderStocks();
-    renderPortfolioUI();
-  });
-
-  socket.on('stockUpdate', (stocks) => {
-    currentStocks = stocks;
-    renderStocks();
-    updateUserUI();
-    renderPortfolioUI();
-  });
-
-  socket.on('newsUpdate', ({ news, stocks, newsHistory }) => {
-    currentStocks = stocks;
-    globalNewsHistory = newsHistory;
-    document.getElementById('ticker-news').innerText = news;
-    renderStocks();
-    renderNewsBoard();
-    updateUserUI();
-    renderPortfolioUI();
-  });
-
-  socket.on('userListUpdate', (users) => {
-    document.getElementById('user-count').innerText = users.length;
-    const listEl = document.getElementById('user-list');
-    const selectEl = document.getElementById('admin-user-select');
-    
-    listEl.innerHTML = users.map(u => `
-      <div class="user-card">
-        <div class="user-card-header">
-          <span style="font-weight:bold; color:#fff;">${u.name}</span>
-          <span style="font-size:10px; color:${u.online ? '#22c55e' : '#64748b'};">
-            <span class="status-dot ${u.online ? 'status-online' : 'status-offline'}"></span>
-            ${u.online ? 'ONLINE' : 'OFFLINE'}
-          </span>
-        </div>
-        <div style="font-size:11px; color:var(--text-muted);">
-          총 자산: <strong style="color:#fff;">${u.totalAssets.toLocaleString()}</strong>원
-        </div>
-      </div>
-    `).join('');
-
-    selectEl.innerHTML = users.map(u => `<option value="${u.ip}">${u.name} (${u.ip})</option>`).join('');
-  });
-
-  socket.on('forceReload', (msg) => {
-    alert(msg);
-    window.location.reload();
-  });
-
-  socket.on('alert', (msg) => alert(msg));
-
-  function updateUserUI() {
-    if (!myData) return;
-    document.getElementById('my-cash').innerText = myData.cash.toLocaleString();
-
-    let totalStockVal = 0;
-    Object.keys(currentStocks).forEach(id => {
-      const count = myData.stocks[id] || 0;
-      totalStockVal += count * currentStocks[id].price;
-    });
-    document.getElementById('my-total-assets').innerText = (myData.cash + totalStockVal).toLocaleString();
-  }
-
-  function renderStocks() {
-    const tbody = document.getElementById('stock-list');
-    tbody.innerHTML = '';
-
-    Object.keys(currentStocks).forEach(id => {
-      const stock = currentStocks[id];
-      const myCount = myData?.stocks[id] || 0;
-      
-      const isUp = stock.price >= stock.startPrice;
-      const priceClass = isUp ? 'price-up' : 'price-down';
-      const sign = isUp ? '▲' : '▼';
-
-      tbody.innerHTML += `
-        <tr>
-          <td>
-            <div class="dept-name">${stock.name}</div>
-            <div class="dept-category">${stock.category}</div>
-          </td>
-          <td style="text-align: right;">
-            <div class="price-tag ${priceClass}">${sign} ${stock.price.toLocaleString()}원</div>
-          </td>
-          <td style="text-align: center; color: #fff; font-weight: bold; font-family: 'Consolas', monospace;">
-            ${myCount} 주
-          </td>
-          <td style="text-align: right;">
-            <div class="action-btns">
-              <input type="number" id="qty-input-${id}" class="qty-input" value="1" min="1">
-              <button class="btn-trade btn-buy" onclick="buy(${id})">매수</button>
-              <button class="btn-trade btn-sell" onclick="sell(${id})">매도</button>
+        <div id="screen">
+            <!-- 파트너 상태 박스 -->
+            <div class="pokemon-card">
+                <img id="partner-sprite" class="sprite" src="" alt="포켓몬">
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span id="partner-name" style="font-size: 18px; font-weight: bold;">-</span>
+                        <span id="partner-level">Lv.5</span>
+                    </div>
+                    <div style="margin: 5px 0; font-size: 12px;">
+                        HP <span id="hp-text">35/35</span>
+                        <div class="hp-bar-container">
+                            <div id="hp-bar" class="hp-bar"></div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #0f380f;">
+                        친밀도: <span id="affinity-text">10.0%</span> | 피로도: <span id="fatigue-text">0%</span>
+                    </div>
+                </div>
             </div>
-          </td>
-        </tr>
-      `;
-    });
-  }
 
-  function renderPortfolioUI() {
-    if (!myData || !myData.stocks) return;
+            <!-- 자산 상태 -->
+            <div style="margin-top: 10px; font-size: 14px; display: flex; justify-content: space-between;">
+                <span>💰 골드: <b id="gold-text">10,000</b> G</span>
+                <span>🔴 몬스터볼: <b id="ball-text">5</b> 개</span>
+            </div>
 
-    const tbody = document.getElementById('portfolio-list');
-    const totalReturnEl = document.getElementById('total-return-rate');
-    tbody.innerHTML = '';
-
-    let totalBuyAmount = 0;
-    let totalEvalAmount = 0;
-    let hasStock = false;
-
-    Object.keys(currentStocks).forEach(id => {
-      const qty = myData.stocks[id] || 0;
-      if (qty <= 0) return;
-
-      hasStock = true;
-      const stock = currentStocks[id];
-      const avgPrice = myData.avgPrices?.[id] || stock.price;
-      const currentPrice = stock.price;
-
-      const buyVal = avgPrice * qty;
-      const evalVal = currentPrice * qty;
-      const rate = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-
-      totalBuyAmount += buyVal;
-      totalEvalAmount += evalVal;
-
-      let rateColor = 'var(--text-main)';
-      let sign = '';
-      if (rate > 0) {
-        rateColor = 'var(--up-color)';
-        sign = '+';
-      } else if (rate < 0) {
-        rateColor = 'var(--down-color)';
-      }
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="font-weight:bold; color:#fff;">${stock.name}</td>
-        <td style="text-align:right;">${qty}주</td>
-        <td style="text-align:right;">${Math.round(avgPrice).toLocaleString()}원</td>
-        <td style="text-align:right; font-weight:bold; font-family:'Consolas', monospace; color:${rateColor};">
-          ${sign}${rate.toFixed(2)}%
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    if (!hasStock) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">보유 주식이 없습니다.</td></tr>';
-      totalReturnEl.innerText = '0.00%';
-      totalReturnEl.style.color = '#fff';
-    } else {
-      const totalRate = totalBuyAmount > 0 ? ((totalEvalAmount - totalBuyAmount) / totalBuyAmount) * 100 : 0;
-      let totalColor = '#fff';
-      let totalSign = '';
-      if (totalRate > 0) {
-        totalColor = 'var(--up-color)';
-        totalSign = '+';
-      } else if (totalRate < 0) {
-        totalColor = 'var(--down-color)';
-      }
-
-      totalReturnEl.innerText = `${totalSign}${totalRate.toFixed(2)}%`;
-      totalReturnEl.style.color = totalColor;
-    }
-  }
-
-  function renderNewsBoard() {
-    const container = document.getElementById('news-board-list');
-    if (!globalNewsHistory || globalNewsHistory.length === 0) {
-      container.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:30px;">아직 발생한 뉴스 속보가 없습니다.</div>`;
-      return;
-    }
-
-    container.innerHTML = globalNewsHistory.map(item => {
-      const isGood = item.rate > 0;
-      const rateStr = `${isGood ? '+' : ''}${(item.rate * 100).toFixed(1)}%`;
-      return `
-        <div class="news-card">
-          <div>
-            <div class="news-time">${item.time} | ${item.deptName}</div>
-            <div class="news-msg">${item.msg}</div>
-          </div>
-          <div class="news-badge ${isGood ? 'badge-good' : 'badge-bad'}">
-            ${rateStr}
-          </div>
+            <!-- 메인 활동 메뉴 -->
+            <div class="menu-grid">
+                <div class="btn btn-center" onclick="openModal('center-modal')">🏥 포켓몬 Center</div>
+                <div class="btn btn-train" onclick="trainPartner()">🏋️ 훈련소</div>
+                <div class="btn" onclick="alert('측정소 오픈 준비중!')">📊 측정소</div>
+                <div class="btn btn-field" onclick="exploreField()">🌲 필드 탐험</div>
+                <div class="btn" onclick="alert('던전은 하루 무료 2회!')">🏰 던전 입장</div>
+                <div class="btn" onclick="alert('보관소 기능 준비중!')">📦 보관소</div>
+            </div>
         </div>
-      `;
-    }).join('');
-  }
+    </div>
 
-  function buy(deptId) {
-    const count = document.getElementById(`qty-input-${deptId}`).value;
-    socket.emit('buy', { deptId, count });
-  }
+    <!-- 야생 포획 모달 -->
+    <div id="catch-modal" class="modal">
+        <div class="modal-box">
+            <h3 id="wild-title">야생 포켓몬 등장!</h3>
+            <img id="wild-sprite" class="sprite" src="" alt="야생">
+            <p id="wild-desc">무엇을 할까?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn" onclick="throwBall('poke')">🔴 몬스터볼 던지기</button>
+                <button class="btn" onclick="closeModal('catch-modal')">🏃 도망치기</button>
+            </div>
+        </div>
+    </div>
 
-  function sell(deptId) {
-    const count = document.getElementById(`qty-input-${deptId}`).value;
-    socket.emit('sell', { deptId, count });
-  }
+    <!-- 우측 실시간 사이드바 -->
+    <div id="sidebar">
+        <h3>👥 접속 유저 랭킹</h3>
+        <div id="user-list"></div>
+    </div>
 
-  function adminUpdateCash() {
-    const targetIp = document.getElementById('admin-user-select').value;
-    const cash = document.getElementById('admin-cash-input').value;
-    socket.emit('adminModifyUser', { targetIp, cash });
-  }
+    <script>
+        let ws;
+        let myData = null;
+        let currentWild = null;
 
-  function adminResetUser() {
-    const targetIp = document.getElementById('admin-user-select').value;
-    if (confirm('선택한 사원의 닉네임과 계정 정보를 리셋하시겠습니까?\n(차단되지 않으며 재접속 시 정상적으로 닉네임을 다시 설정할 수 있습니다.)')) {
-      socket.emit('adminResetUser', { targetIp });
-    }
-  }
-</script>
+        const nickname = prompt("사용할 사원 닉네임을 입력하세요:", "지우") || "사원" + Math.floor(Math.random()*1000);
+
+        function connectWS() {
+            ws = new WebSocket(`ws://${location.host}`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ type: 'INIT', nickname: nickname }));
+            };
+
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+
+                if (data.type === 'STATE_UPDATE' || data.type === 'TRAIN_RESULT') {
+                    if (data.msg) alert(data.msg);
+                    if (data.user) {
+                        myData = data.user;
+                        updateUI();
+                    }
+                }
+
+                if (data.type === 'WILD_SPAWN') {
+                    currentWild = data.wild;
+                    myData = data.user;
+                    updateUI();
+
+                    const isShiny = currentWild.isShiny;
+                    document.getElementById('wild-title').innerHTML = isShiny ? 
+                        `<span class="shiny-text">✨ [SHINY] 야생 ${currentWild.name}! ✨</span>` : 
+                        `야생의 ${currentWild.name}이(가) 나타났다!`;
+
+                    const spriteUrl = isShiny ? 
+                        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${currentWild.id}.png` : 
+                        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${currentWild.id}.png`;
+
+                    const imgEl = document.getElementById('wild-sprite');
+                    imgEl.src = spriteUrl;
+                    imgEl.className = isShiny ? 'sprite shiny-glow' : 'sprite';
+
+                    document.getElementById('catch-modal').style.display = 'flex';
+                }
+
+                if (data.type === 'CATCH_RESULT') {
+                    if (data.success) {
+                        alert("🎉 신난다! 포켓몬을 잡았다!");
+                        closeModal('catch-modal');
+                    } else {
+                        alert(`흔들림 ${data.shakes}회... 포켓몬이 볼을 깨고 나왔다!`);
+                    }
+                    if (data.user) {
+                        myData = data.user;
+                        updateUI();
+                    }
+                }
+
+                if (data.type === 'SIDEBAR_LIST') {
+                    renderSidebar(data.users);
+                }
+            };
+        }
+
+        function updateUI() {
+            if (!myData) return;
+            const p = myData.partner;
+            
+            document.getElementById('partner-name').innerHTML = p.isShiny ? `<span class="shiny-text">✨ ${p.name}</span>` : p.name;
+            document.getElementById('partner-level').innerText = `Lv.${p.level}`;
+            document.getElementById('hp-text').innerText = `${p.hp}/${p.maxHp}`;
+            document.getElementById('affinity-text').innerText = `${p.affinity.toFixed(1)}%`;
+            document.getElementById('fatigue-text').innerText = `${p.fatigue}%`;
+            document.getElementById('gold-text').innerText = myData.gold.toLocaleString();
+            document.getElementById('ball-text').innerText = myData.balls.poke;
+
+            const spriteImg = document.getElementById('partner-sprite');
+            spriteImg.src = p.isShiny ? 
+                `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${p.id}.png` : 
+                `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+            spriteImg.className = p.isShiny ? 'sprite shiny-glow' : 'sprite';
+
+            // HP 바
+            const hpPercent = (p.hp / p.maxHp) * 100;
+            const hpBar = document.getElementById('hp-bar');
+            hpBar.style.width = `${hpPercent}%`;
+        }
+
+        function renderSidebar(users) {
+            const container = document.getElementById('user-list');
+            container.innerHTML = '';
+            users.sort((a,b) => b.power - a.power).forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                div.innerHTML = `<b>${u.nickname}</b> (${u.location})<br>🔥 전투력: ${u.power}`;
+                container.appendChild(div);
+            });
+        }
+
+        function trainPartner() {
+            ws.send(JSON.stringify({ type: 'TRAIN' }));
+        }
+
+        function exploreField() {
+            ws.send(JSON.stringify({ type: 'EXPLORE_FIELD' }));
+        }
+
+        function throwBall(ballType) {
+            if (!currentWild) return;
+            ws.send(JSON.stringify({
+                type: 'CATCH_ATTEMPT',
+                ballType: ballType,
+                wildHp: currentWild.hp,
+                wildMaxHp: currentWild.maxHp,
+                baseCatchRate: currentWild.baseCatchRate
+            }));
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        connectWS();
+    </script>
 </body>
 </html>
