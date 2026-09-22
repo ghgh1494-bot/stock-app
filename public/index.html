@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사내 모의 주식 거래 시스템 (MTS)</title>
+  <style>
+    :root {
+      --bg-color: #0e1118;
+      --card-bg: #171b26;
+      --card-border: #232736;
+      --text-main: #d1d4dc;
+      --text-muted: #787b86;
+      --up-color: #f23645;
+      --down-color: #089981;
+      --accent-color: #2962ff;
+      --accent-hover: #1e53e5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); font-size: 13px; min-height: 100vh; display: flex; flex-direction: column; }
+
+    #login-screen {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    #login-screen h2 { color: #fff; margin-bottom: 8px; font-size: 20px; }
+    #welcome-msg { color: var(--text-muted); font-size: 12px; margin-bottom: 24px; line-height: 1.4; }
+    .input-group { margin-bottom: 12px; text-align: left; }
+    .input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .input-field {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0e1118;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .input-field:focus { border-color: var(--accent-color); }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-color);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-login:hover { background: var(--accent-hover); }
+
+    #app { display: none; flex-direction: column; height: 100vh; }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand { font-size: 15px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .brand-badge { background: var(--accent-color); font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+    
+    .user-info-bar { display: flex; align-items: center; gap: 20px; }
+    .asset-item { text-align: right; }
+    .asset-label { font-size: 10px; color: var(--text-muted); display: block; }
+    .asset-value { font-weight: bold; color: #fff; font-size: 14px; }
+    .btn-sm {
+      background: #2a2e3d;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .ticker-bar {
+      background: #0a0c10;
+      border-bottom: 1px solid var(--card-border);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .ticker-tag { background: #f39c12; color: #000; font-weight: bold; font-size: 10px; padding: 1px 5px; border-radius: 2px; }
+    .ticker-content { color: #e1e3e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .dashboard { display: flex; flex: 1; overflow: hidden; }
+    .main-content { flex: 3; padding: 16px; overflow-y: auto; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 15px; }
+
+    /* 탭 메뉴 디자인 */
+    .nav-tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .tab-btn.active { background: #2a2e3d; color: #fff; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .stock-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .stock-table th { padding: 10px 12px; color: var(--text-muted); font-size: 11px; border-bottom: 1px solid var(--card-border); font-weight: normal; }
+    .stock-table td { padding: 12px; border-bottom: 1px solid var(--card-border); }
+    .stock-table tr:hover { background: #1c202e; }
+
+    .dept-name { font-weight: bold; color: #fff; font-size: 14px; }
+    .dept-category { font-size: 11px; color: var(--text-muted); }
+
+    .price-tag { font-family: 'Consolas', monospace; font-weight: bold; font-size: 14px; }
+    .price-up { color: var(--up-color); }
+    .price-down { color: var(--down-color); }
+
+    .action-btns { display: flex; gap: 6px; justify-content: flex-end; }
+    .btn-trade { padding: 6px 12px; border: none; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer; }
+    .btn-buy { background: var(--up-color); color: #fff; }
+    .btn-sell { background: var(--down-color); color: #fff; }
+
+    /* 뉴스 게시판 리스트 스타일 */
+    .news-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .news-time { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .news-msg { font-size: 13px; color: #fff; font-weight: 500; }
+    .news-badge { font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: 'Consolas', monospace; }
+    .badge-good { background: rgba(242, 54, 69, 0.15); color: var(--up-color); border: 1px solid var(--up-color); }
+    .badge-bad { background: rgba(8, 153, 129, 0.15); color: var(--down-color); border: 1px solid var(--down-color); }
+
+    .sidebar { flex: 1; min-width: 280px; max-width: 340px; padding: 16px; background: var(--card-bg); overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .user-card { background: #0e1118; border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; }
+    .user-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .status-online { background: #22c55e; }
+    .status-offline { background: #64748b; }
+
+    .admin-box { background: #1e1014; border: 1px solid #5c1d24; padding: 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="brand" style="justify-content: center; margin-bottom: 16px;">
+    <span>사내 ERP 자산관리</span>
+    <span class="brand-badge">MTS v2.5</span>
+  </div>
+  <h2>계정 접속</h2>
+  <p id="welcome-msg">네트워크 정보를 확인하는 중입니다...</p>
+
+  <div class="input-group">
+    <label for="username">사원 닉네임</label>
+    <input type="text" id="username" class="input-field" placeholder="예: 홍길동">
+  </div>
+  <div class="input-group">
+    <label for="admin-pass">관리자 인증키 (선택)</label>
+    <input type="password" id="admin-pass" class="input-field" placeholder="비밀번호 입력">
+  </div>
+  <button class="btn-login" onclick="login()">터미널 접속하기</button>
+</div>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <span>사내 주식 모의거래 시스템</span>
+      <span class="brand-badge">LIVE</span>
+    </div>
+
+    <div class="user-info-bar">
+      <div class="asset-item">
+        <span class="asset-label">접속 계정</span>
+        <span id="my-name" style="color:#fff; font-weight:bold;">-</span>
+        <button class="btn-sm" onclick="promptChangeName()" style="margin-left:4px;">변경</button>
+      </div>
+      <div class="asset-item">
+        <span class="asset-label">보유 예수금</span>
+        <span id="my-cash" class="asset-value" style="color:#f39c12;">0</span> <span style="font-size:10px; color:#888;">원</span>
+      </div>
+      <div class="asset-item">
+        <span class="asset-label">총 평가 자산</span>
+        <span id="my-total-assets" class="asset-value">0</span> <span style="font-size:10px; color:#888;">원</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="ticker-bar">
+    <span class="ticker-tag">LATEST NEWS</span>
+    <div class="ticker-content" id="ticker-news">시스템이 정상 구동되었습니다.</div>
+  </div>
+
+  <div class="dashboard">
+    <div class="main-content">
+      <!-- 탭 카테고리 -->
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('stocks-tab', this)">📈 종목 시세</button>
+        <button class="tab-btn" onclick="switchTab('news-tab', this)">📰 사내 속보 게시판</button>
+      </div>
+
+      <!-- 1. 종목 시세 탭 -->
+      <div id="stocks-tab" class="tab-content active">
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>종목명 / 종목구분</th>
+              <th style="text-align: right;">현재가</th>
+              <th style="text-align: center;">내 보유 수량</th>
+              <th style="text-align: right;">주문 실행</th>
+            </tr>
+          </thead>
+          <tbody id="stock-list"></tbody>
+        </table>
+      </div>
+
+      <!-- 2. 뉴스 게시판 탭 -->
+      <div id="news-tab" class="tab-content">
+        <div id="news-board-list">
+          <div style="color:var(--text-muted); text-align:center; padding:30px;">발행된 속보가 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div>
+        <div style="font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 12px;">실시간 참여 사원 (<span id="user-count">0</span>)</div>
+        <div id="user-list"></div>
+      </div>
+
+      <div id="admin-panel" class="admin-box" style="display:none;">
+        <div style="color: #f87171; font-size: 12px; font-weight: bold; margin-bottom: 10px;">⚡ 어드민 전용 제어판</div>
+        <div class="input-group">
+          <label>대상 사원 선택</label>
+          <select id="admin-user-select" class="input-field" style="padding: 6px;"></select>
+        </div>
+        <div class="input-group">
+          <label>조정할 예수금(원)</label>
+          <input type="number" id="admin-cash-input" class="input-field" placeholder="예: 5000000" style="padding: 6px;">
+        </div>
+        <button class="btn-login" style="background:#ef4444; padding:8px; margin-top:4px;" onclick="adminUpdateCash()">자산 강제 수정</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  let myData = null;
+  let currentStocks = {};
+  let globalNewsHistory = [];
+
+  socket.on('checkExistingUser', ({ existingUser }) => {
+    const welcomeMsg = document.getElementById('welcome-msg');
+    if (existingUser) {
+      welcomeMsg.innerText = `기존 접속 기록이 확인되었습니다. [닉네임: ${existingUser.name}]`;
+      document.getElementById('username').value = existingUser.name;
+    } else {
+      welcomeMsg.innerText = `신규 단말기입니다. 사용할 닉네임을 설정해 주세요.`;
+    }
+  });
+
+  function login() {
+    const name = document.getElementById('username').value.trim();
+    const adminPassword = document.getElementById('admin-pass').value.trim();
+    if (!name) return alert('닉네임을 입력해주세요.');
+
+    socket.emit('login', { name, adminPassword });
+  }
+
+  function promptChangeName() {
+    const newName = prompt('변경할 닉네임을 입력하세요:', myData?.name || '');
+    if (newName && newName.trim()) {
+      socket.emit('changeNickname', newName.trim());
+    }
+  }
+
+  function switchTab(tabId, btnEl) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(tabId).classList.add('active');
+    btnEl.classList.add('active');
+  }
+
+  socket.on('loginSuccess', ({ user, stocks, news, newsHistory }) => {
+    myData = user;
+    currentStocks = stocks;
+    globalNewsHistory = newsHistory || [];
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('my-name').innerText = user.name;
+    document.getElementById('ticker-news').innerText = news;
+
+    if (user.isAdmin) {
+      document.getElementById('admin-panel').style.display = 'block';
+    }
+
+    renderStocks();
+    renderNewsBoard();
+    updateUserUI();
+  });
+
+  socket.on('updateUserData', (user) => {
+    myData = user;
+    document.getElementById('my-name').innerText = user.name;
+    updateUserUI();
+    renderStocks();
+  });
+
+  socket.on('stockUpdate', (stocks) => {
+    currentStocks = stocks;
+    renderStocks();
+    updateUserUI();
+  });
+
+  socket.on('newsUpdate', ({ news, stocks, newsHistory }) => {
+    currentStocks = stocks;
+    globalNewsHistory = newsHistory;
+    document.getElementById('ticker-news').innerText = news;
+    renderStocks();
+    renderNewsBoard();
+    updateUserUI();
+  });
+
+  socket.on('userListUpdate', (users) => {
+    document.getElementById('user-count').innerText = users.length;
+    const listEl = document.getElementById('user-list');
+    const selectEl = document.getElementById('admin-user-select');
+    
+    listEl.innerHTML = users.map(u => `
+      <div class="user-card">
+        <div class="user-card-header">
+          <span style="font-weight:bold; color:#fff;">${u.name}</span>
+          <span style="font-size:10px; color:${u.online ? '#22c55e' : '#64748b'};">
+            <span class="status-dot ${u.online ? 'status-online' : 'status-offline'}"></span>
+            ${u.online ? 'ONLINE' : 'OFFLINE'}
+          </span>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted);">
+          총 자산: <strong style="color:#fff;">${u.totalAssets.toLocaleString()}</strong>원
+        </div>
+      </div>
+    `).join('');
+
+    selectEl.innerHTML = users.map(u => `<option value="${u.ip}">${u.name} (${u.ip})</option>`).join('');
+  });
+
+  socket.on('alert', (msg) => alert(msg));
+
+  function updateUserUI() {
+    if (!myData) return;
+    document.getElementById('my-cash').innerText = myData.cash.toLocaleString();
+
+    let totalStockVal = 0;
+    Object.keys(currentStocks).forEach(id => {
+      totalStockVal += (myData.stocks[id] || 0) * currentStocks[id].price;
+    });
+    document.getElementById('my-total-assets').innerText = (myData.cash + totalStockVal).toLocaleString();
+  }
+
+  function renderStocks() {
+    const tbody = document.getElementById('stock-list');
+    tbody.innerHTML = '';
+
+    Object.keys(currentStocks).forEach(id => {
+      const stock = currentStocks[id];
+      const myCount = myData?.stocks[id] || 0;
+      
+      const isUp = stock.price >= stock.startPrice;
+      const priceClass = isUp ? 'price-up' : 'price-down';
+      const sign = isUp ? '▲' : '▼';
+
+      tbody.innerHTML += `
+        <tr>
+          <td>
+            <div class="dept-name">${stock.name}</div>
+            <div class="dept-category">${stock.category}</div>
+          </td>
+          <td style="text-align: right;">
+            <div class="price-tag ${priceClass}">${sign} ${stock.price.toLocaleString()}원</div>
+          </td>
+          <td style="text-align: center; color: #fff; font-weight: bold; font-family: 'Consolas', monospace;">
+            ${myCount} 주
+          </td>
+          <td style="text-align: right;">
+            <div class="action-btns">
+              <button class="btn-trade btn-buy" onclick="buy(${id})">매수</button>
+              <button class="btn-trade btn-sell" onclick="sell(${id})">매도</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  function renderNewsBoard() {
+    const container = document.getElementById('news-board-list');
+    if (!globalNewsHistory || globalNewsHistory.length === 0) {
+      container.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:30px;">아직 발생한 뉴스 속보가 없습니다.</div>`;
+      return;
+    }
+
+    container.innerHTML = globalNewsHistory.map(item => {
+      const isGood = item.rate > 0;
+      const rateStr = `${isGood ? '+' : ''}${(item.rate * 100).toFixed(1)}%`;
+      return `
+        <div class="news-card">
+          <div>
+            <div class="news-time">${item.time} | ${item.deptName}</div>
+            <div class="news-msg">${item.msg}</div>
+          </div>
+          <div class="news-badge ${isGood ? 'badge-good' : 'badge-bad'}">
+            ${rateStr}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function buy(deptId) { socket.emit('buy', { deptId, count: 1 }); }
+  function sell(deptId) { socket.emit('sell', { deptId, count: 1 }); }
+
+  function adminUpdateCash() {
+    const targetIp = document.getElementById('admin-user-select').value;
+    const cash = document.getElementById('admin-cash-input').value;
+    socket.emit('adminModifyUser', { targetIp, cash });
+  }
+</script>
+</body>
+</html>
