@@ -129,8 +129,9 @@
     .price-up { color: var(--up-color); }
     .price-down { color: var(--down-color); }
 
-    .action-btns { display: flex; gap: 6px; justify-content: flex-end; }
-    .btn-trade { padding: 6px 12px; border: none; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer; }
+    .action-btns { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+    .qty-input { width: 50px; padding: 4px; border-radius: 3px; border: 1px solid var(--card-border); background: #0e1118; color: #fff; text-align: center; font-size: 12px; }
+    .btn-trade { padding: 6px 10px; border: none; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer; }
     .btn-buy { background: var(--up-color); color: #fff; }
     .btn-sell { background: var(--down-color); color: #fff; }
 
@@ -255,7 +256,7 @@
       </div>
     </div>
 
-    <!-- 우측 사이드바 (상단: 참여사원 / 하단: 내 보유주식 및 수익률) -->
+    <!-- 우측 사이드바 -->
     <div class="sidebar">
       
       <!-- 상단 50%: 실시간 참여 사원 목록 -->
@@ -276,7 +277,10 @@
             <label>조정할 예수금(원)</label>
             <input type="number" id="admin-cash-input" class="input-field" placeholder="예: 5000000" style="padding: 4px; font-size: 11px;">
           </div>
-          <button class="btn-login" style="background:#ef4444; padding:6px; margin-top:2px; font-size:11px;" onclick="adminUpdateCash()">자산 강제 수정</button>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <button class="btn-login" style="background:#ef4444; padding:6px; font-size:11px; flex:1;" onclick="adminUpdateCash()">자산 수정</button>
+            <button class="btn-login" style="background:#d97706; padding:6px; font-size:11px; flex:1;" onclick="adminResetUser()">닉네임 리셋</button>
+          </div>
         </div>
       </div>
 
@@ -417,6 +421,11 @@
     selectEl.innerHTML = users.map(u => `<option value="${u.ip}">${u.name} (${u.ip})</option>`).join('');
   });
 
+  socket.on('forceReload', (msg) => {
+    alert(msg);
+    window.location.reload();
+  });
+
   socket.on('alert', (msg) => alert(msg));
 
   function updateUserUI() {
@@ -457,6 +466,7 @@
           </td>
           <td style="text-align: right;">
             <div class="action-btns">
+              <input type="number" id="qty-input-${id}" class="qty-input" value="1" min="1">
               <button class="btn-trade btn-buy" onclick="buy(${id})">매수</button>
               <button class="btn-trade btn-sell" onclick="sell(${id})">매도</button>
             </div>
@@ -466,7 +476,6 @@
     });
   }
 
-  // 하단 영역: 보유 주식 리스트 및 수익률(+% / -%) 실시간 계산 렌더링
   function renderPortfolioUI() {
     if (!myData || !myData.stocks) return;
 
@@ -559,13 +568,27 @@
     }).join('');
   }
 
-  function buy(deptId) { socket.emit('buy', { deptId, count: 1 }); }
-  function sell(deptId) { socket.emit('sell', { deptId, count: 1 }); }
+  function buy(deptId) {
+    const count = document.getElementById(`qty-input-${deptId}`).value;
+    socket.emit('buy', { deptId, count });
+  }
+
+  function sell(deptId) {
+    const count = document.getElementById(`qty-input-${deptId}`).value;
+    socket.emit('sell', { deptId, count });
+  }
 
   function adminUpdateCash() {
     const targetIp = document.getElementById('admin-user-select').value;
     const cash = document.getElementById('admin-cash-input').value;
     socket.emit('adminModifyUser', { targetIp, cash });
+  }
+
+  function adminResetUser() {
+    const targetIp = document.getElementById('admin-user-select').value;
+    if (confirm('선택한 사원의 닉네임과 계정 정보를 리셋하시겠습니까?\n(차단되지 않으며 재접속 시 정상적으로 닉네임을 다시 설정할 수 있습니다.)')) {
+      socket.emit('adminResetUser', { targetIp });
+    }
   }
 </script>
 </body>
